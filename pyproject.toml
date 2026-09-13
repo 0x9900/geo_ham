@@ -1,0 +1,45 @@
+[build-system]
+    requires = ["setuptools", "wheel"]
+    build-backend = "setuptools.build_meta"
+
+[project]
+    name = "geo_ham"
+    version = "0.0.1"
+    description = "A simple library for targetted for ham radio operators for grid square calculations."
+    readme = "README.md"
+    authors = [
+        { name = "Fred C", email = "w6bsd@bsdworld.org" }
+    ]
+    license = "BSD-3-Clause"
+    requires-python = ">=3.10"
+    classifiers = ["Development Status :: 5 - Production/Stable",
+        "Environment :: Console",
+        "Intended Audience :: End Users/Desktop",
+        "Intended Audience :: HamRadio",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python :: 3",
+        "Topic :: Scientific/Engineering :: GIS"
+    ]
+
+[tool.setuptools]
+    packages = ["geo_ham"]
+
+[tool.setuptools.package-data]
+    "geo_ham" = ["py.typed"]
+
+[project.urls]
+    Source = "https://github.com/0x9900/geo_ham"
+    Tracker = "https://github.com/0x9900/geo_ham/issues"
+
+[project.optional-dependencies]
+    dev = [
+        "build",
+        "flake8",
+        "ipdb",
+        "ipython",
+        "isort",
+        "mypy",
+        "pre-commit",
+        "pylint",
+        "twine",
+    ]

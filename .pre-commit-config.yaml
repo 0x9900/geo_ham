@@ -1,0 +1,26 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-ast
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-added-large-files
+        args: ['--maxkb=20000']  # Default is 500KB
+        exclude: '^analog/examples/.*\.html$'
+      - id: check-added-large-files
+        args: ['--maxkb=2000']  # Default is 500KB
+        exclude: '^^analog/static/.*\.png$'
+
+      - id: check-yaml
+      - id: debug-statements
+  - repo: https://github.com/pycqa/isort
+    rev: 9.0.0a3
+    hooks:
+      - id: isort
+  - repo: https://github.com/PyCQA/flake8
+    rev: 7.3.0
+    hooks:
+      - id: flake8
