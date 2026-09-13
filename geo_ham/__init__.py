@@ -15,6 +15,7 @@ _0 = 48  # ord('0')
 
 _GPS_RE = re.compile(r'([NS\-EW])(\d{2,3})\s+(\d+\.\d+)', re.IGNORECASE)
 
+
 def grid2latlon(maiden: str, center: bool = False) -> tuple[float, float]:
   """
   Optimized version converting maidenhead grid square locators (QRA)
@@ -46,7 +47,7 @@ def grid2latlon(maiden: str, center: bool = False) -> tuple[float, float]:
   return (lat + 0.002083333333333333, lon + 0.004166666666666667) if center else (lat, lon)
 
 
-def latlon2grid(lat: double, lon: double, precision: int = 6) -> str:
+def latlon2grid(lat: float, lon: float, precision: int = 6) -> str:
   """
   Convert (lat, lon) to a Maidenhead locator (QRA).
   precision: 2, 4, 6, or 8 characters.
