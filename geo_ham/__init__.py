@@ -8,6 +8,8 @@
 import math
 import re
 
+__all__ = ["grid2latlon", "latlon2grid", "distance", "azimuth", "dm2decimal"]
+
 _A = 65  # ord('A')
 _0 = 48  # ord('0')
 
@@ -118,7 +120,7 @@ def azimuth(orig: tuple[float, float], dest: tuple[float, float]) -> float:
   return math.degrees(math.atan2(x, y)) % 360
 
 
-def parse_gps(dms):
+def dm2decimal(dms):
   """Parse a QRZ-style DMS coordinate string (e.g. 'N043 12.345') to decimal degrees."""
   if not isinstance(dms, str):
     return dms
