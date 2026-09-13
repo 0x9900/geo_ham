@@ -7,16 +7,46 @@
 
 import math
 import re
+from dataclasses import dataclass
+from typing import Tuple
 
-__all__ = ["grid2latlon", "latlon2grid", "distance", "azimuth", "dm2decimal"]
+__all__ = ["grid2rectangle", "grid2latlon", "latlon2grid", "distance", "azimuth", "ddm2decimal"]
+
+
+LatLon = Tuple[float, float]
+
+_GPS_RE = re.compile(r'([NS\-EW])(\d{2,3})\s+(\d+\.\d+)', re.IGNORECASE)
+
+FIELD_LON_STEP = 20.0  # degrees
+FIELD_LAT_STEP = 10.0  # degrees
+SQUARE_LON_STEP = 2.0  # degrees
+SQUARE_LAT_STEP = 1.0  # degrees
 
 _A = 65  # ord('A')
 _0 = 48  # ord('0')
 
-_GPS_RE = re.compile(r'([NS\-EW])(\d{2,3})\s+(\d+\.\d+)', re.IGNORECASE)
+
+@dataclass(frozen=True)
+class Rectangle:
+  lon_min: float
+  lat_min: float
+  lon_max: float
+  lat_max: float
 
 
-def grid2latlon(maiden: str, center: bool = False) -> tuple[float, float]:
+def grid2rectangle(maiden: str) -> Rectangle:
+  """Convert a 4-character maidenhead grid square into its bounding rectangle."""
+  maiden = maiden.strip().upper()
+  if len(maiden) != 4:
+    raise ValueError(f'grid2rectangle expects a 4-character locator, got {maiden!r}')
+
+  lon_min = (ord(maiden[0]) - _A) * FIELD_LON_STEP + (ord(maiden[2]) - _0) * SQUARE_LON_STEP - 180
+  lat_min = (ord(maiden[1]) - _A) * FIELD_LAT_STEP + (ord(maiden[3]) - _0) * SQUARE_LAT_STEP - 90
+
+  return Rectangle(lon_min, lat_min, lon_min + SQUARE_LON_STEP, lat_min + SQUARE_LAT_STEP)
+
+
+def grid2latlon(maiden: str, center: bool = False) -> LatLon:
   """
   Optimized version converting maidenhead grid square locators (QRA)
   into a lat long tuple.
@@ -27,12 +57,12 @@ def grid2latlon(maiden: str, center: bool = False) -> tuple[float, float]:
   if n not in (2, 4, 6, 8):
     raise ValueError('Locator length error: 2, 4, 6 or 8 characters accepted')
 
-  lon = (ord(maiden[0]) - _A) * 20 - 180.0
-  lat = (ord(maiden[1]) - _A) * 10 - 90.0
+  lon = (ord(maiden[0]) - _A) * FIELD_LON_STEP - 180.0
+  lat = (ord(maiden[1]) - _A) * FIELD_LAT_STEP - 90.0
   if n == 2:
     return (lat + 5.0, lon + 10.0) if center else (lat, lon)
 
-  lon += (ord(maiden[2]) - _0) * 2
+  lon += (ord(maiden[2]) - _0) * SQUARE_LON_STEP
   lat += ord(maiden[3]) - _0
   if n == 4:
     return (lat + 0.5, lon + 1.0) if center else (lat, lon)
@@ -56,15 +86,15 @@ def latlon2grid(lat: float, lon: float, precision: int = 6) -> str:
   lat += 90.0
 
   # Field (A-R)
-  lon_f, lon = divmod(lon, 20.0)
-  lat_f, lat = divmod(lat, 10.0)
+  lon_f, lon = divmod(lon, FIELD_LON_STEP)
+  lat_f, lat = divmod(lat, FIELD_LAT_STEP)
   grid = chr(_A + int(lon_f)) + chr(_A + int(lat_f))
   if precision == 2:
     return grid
 
   # Square (0-9)
-  lon_s, lon = divmod(lon, 2.0)
-  lat_s, lat = divmod(lat, 1.0)
+  lon_s, lon = divmod(lon, SQUARE_LON_STEP)
+  lat_s, lat = divmod(lat, SQUARE_LAT_STEP)
   grid += str(int(lon_s)) + str(int(lat_s))
   if precision == 4:
     return grid
@@ -85,7 +115,7 @@ def latlon2grid(lat: float, lon: float, precision: int = 6) -> str:
   return grid
 
 
-def distance(orig: tuple[float, float], dest: tuple[float, float]) -> float:
+def distance(orig: LatLon, dest: LatLon) -> float:
   """Calculate the great-circle distance between 2 coordinates (Haversine, in km)."""
   lat1, lon1 = orig
   lat2, lon2 = dest
@@ -99,7 +129,7 @@ def distance(orig: tuple[float, float], dest: tuple[float, float]) -> float:
   return 2 * 6371.0 * math.asin(math.sqrt(a))
 
 
-def azimuth(orig: tuple[float, float], dest: tuple[float, float]) -> float:
+def azimuth(orig: LatLon, dest: LatLon) -> float:
   """Calculate the compass bearing (0-360°) of `dest` from `orig`."""
   # pylint: disable=too-many-locals
 
@@ -120,8 +150,8 @@ def azimuth(orig: tuple[float, float], dest: tuple[float, float]) -> float:
   return math.degrees(math.atan2(x, y)) % 360
 
 
-def dm2decimal(dms):
-  """Parse a QRZ-style DMS coordinate string (e.g. 'N043 12.345') to decimal degrees."""
+def ddm2decimal(dms: str) -> float:
+  """Parse a QRZ-style DDM coordinate string (e.g. 'N043 12.345') to decimal degrees."""
   if not isinstance(dms, str):
     return dms
 
