@@ -35,15 +35,55 @@ class Rectangle:
 
 
 def grid2rectangle(maiden: str) -> Rectangle:
-  """Convert a 4-character maidenhead grid square into its bounding rectangle."""
+  """Convert a 4, 6, or 8 character Maidenhead locator to a rectangle.
+  Returns a Rectangle(west, south, east, north) in decimal degrees
+  """
   maiden = maiden.strip().upper()
-  if len(maiden) != 4:
-    raise ValueError(f'grid2rectangle expects a 4-character locator, got {maiden!r}')
 
-  lon_min = (ord(maiden[0]) - _A) * FIELD_LON_STEP + (ord(maiden[2]) - _0) * SQUARE_LON_STEP - 180
-  lat_min = (ord(maiden[1]) - _A) * FIELD_LAT_STEP + (ord(maiden[3]) - _0) * SQUARE_LAT_STEP - 90
+  if len(maiden) not in (4, 6, 8):
+    raise ValueError(
+      f"grid2rectangle expects a 4-, 6-, or 8-character locator, "
+      f"got {maiden!r} {len(maiden)} characters"
+    )
 
-  return Rectangle(lon_min, lat_min, lon_min + SQUARE_LON_STEP, lat_min + SQUARE_LAT_STEP)
+  def _check_letters(a: str, b: str, hi: str, label: str) -> None:
+    if not ("A" <= a <= hi and "A" <= b <= hi):
+      raise ValueError(f"invalid Maidenhead {label}: {maiden!r}")
+
+  def _check_digits(a: str, b: str, label: str) -> None:
+    if not (a.isdigit() and b.isdigit()):
+      raise ValueError(f"invalid Maidenhead {label}: {maiden!r}")
+
+  # Field: AA-RR
+  _check_letters(maiden[0], maiden[1], "R", "field")
+  lon_min = (ord(maiden[0]) - _A) * FIELD_LON_STEP - 180.0
+  lat_min = (ord(maiden[1]) - _A) * FIELD_LAT_STEP - 90.0
+
+  # Square: 00-99
+  _check_digits(maiden[2], maiden[3], "square")
+  lon_min += (ord(maiden[2]) - _0) * SQUARE_LON_STEP
+  lat_min += (ord(maiden[3]) - _0) * SQUARE_LAT_STEP
+
+  lon_step = SQUARE_LON_STEP
+  lat_step = SQUARE_LAT_STEP
+
+  if len(maiden) >= 6:
+    # Subsquare: AA-XX
+    _check_letters(maiden[4], maiden[5], "X", "subsquare")
+    lon_step /= 24.0
+    lat_step /= 24.0
+    lon_min += (ord(maiden[4]) - _A) * lon_step
+    lat_min += (ord(maiden[5]) - _A) * lat_step
+
+  if len(maiden) == 8:
+    # Extended square: 00-99
+    _check_digits(maiden[6], maiden[7], "extended square")
+    lon_step /= 10.0
+    lat_step /= 10.0
+    lon_min += (ord(maiden[6]) - _0) * lon_step
+    lat_min += (ord(maiden[7]) - _0) * lat_step
+
+  return Rectangle(lon_min, lat_min, lon_min + lon_step, lat_min + lat_step)
 
 
 def grid2latlon(maiden: str, center: bool = False) -> LatLon:
