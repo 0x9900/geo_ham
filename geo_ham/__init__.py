@@ -195,6 +195,11 @@ def ddm2decimal(dms: str) -> float:
   if not isinstance(dms, str):
     return dms
 
+  try:
+    return float(dms)
+  except ValueError:
+    pass
+
   match = _GPS_RE.match(dms)
   if not match:
     raise ValueError(f'Unrecognized GPS coordinate format: {dms!r}')
